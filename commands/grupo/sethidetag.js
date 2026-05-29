@@ -1,27 +1,133 @@
-let handler = async (m, { text, usedPrefix, command }) => {
-  if (!global.db.data.chats) global.db.data.chats = {}
-  if (!global.db.data.chats[m.chat]) global.db.data.chats[m.chat] = {}
+const handler = async (m, { conn, text, participants }) => {
 
-  const chat = global.db.data.chats[m.chat]
-  const input = (text || '').trim()
+  const mentions = participants.map(
+    p => conn.decodeJid(p.id)
+  )
 
-  if (!input) {
-    return m.reply(`🍃 Usa así:\n\n${usedPrefix + command} ROKO-BOT\n\nPara quitarlo:\n${usedPrefix + command} off`)
+  // 📢 Responder a un mensaje
+  if (m.quoted) {
+
+    const quoted = m.quoted
+
+    const quotedText =
+      quoted.text ||
+      quoted.caption ||
+      ''
+
+    // Imagen
+    if (quoted.mtype === 'imageMessage') {
+
+      const media =
+        await quoted.download?.()
+
+      return conn.sendMessage(
+        m.chat,
+        {
+          image: media,
+          caption: quotedText,
+          mentions
+        },
+        { quoted: m }
+      )
+
+    }
+
+    // Video
+    if (quoted.mtype === 'videoMessage') {
+
+      const media =
+        await quoted.download?.()
+
+      return conn.sendMessage(
+        m.chat,
+        {
+          video: media,
+          caption: quotedText,
+          mentions
+        },
+        { quoted: m }
+      )
+
+    }
+
+    // Audio
+    if (quoted.mtype === 'audioMessage') {
+
+      const media =
+        await quoted.download?.()
+
+      return conn.sendMessage(
+        m.chat,
+        {
+          audio: media,
+          mimetype: 'audio/mp4',
+          mentions
+        },
+        { quoted: m }
+      )
+
+    }
+
+    // Sticker
+    if (quoted.mtype === 'stickerMessage') {
+
+      const media =
+        await quoted.download?.()
+
+      return conn.sendMessage(
+        m.chat,
+        {
+          sticker: media,
+          mentions
+        },
+        { quoted: m }
+      )
+
+    }
+
+    // Texto
+    return conn.sendMessage(
+      m.chat,
+      {
+        text: quotedText,
+        mentions
+      },
+      { quoted: m }
+    )
+
   }
 
-  if (['off', 'reset', 'delete', 'remove', 'none'].includes(input.toLowerCase())) {
-    delete chat.customFooter
-    return m.reply('🍃 Footer personalizado eliminado. Ahora se usará el nombre normal del bot.')
+  // 📢 .n texto
+  if (text) {
+
+    return conn.sendMessage(
+      m.chat,
+      {
+        text,
+        mentions
+      },
+      { quoted: m }
+    )
+
   }
 
-  chat.customFooter = input
+  return conn.reply(
+    m.chat,
+    `⚠️ Uso correcto:
 
-  m.reply(`✅ Footer personalizado actualizado:\n\n${input}`)
+.n texto
+
+o responde a cualquier mensaje con:
+
+.n`,
+    m
+  )
+
 }
 
-handler.help = ['setn <texto|off>']
+handler.help = ['n <texto>']
 handler.tags = ['group']
-handler.command = /^(setn|setfooter|setfirma)$/i
+handler.command = /^n$/i
 handler.admin = true
 handler.group = true
 
